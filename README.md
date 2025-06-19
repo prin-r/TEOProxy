@@ -14,15 +14,14 @@ This repo contains:
 
 ## 📦 Features
 
-* **Example contracts**: This will help develop other custom oracle scripts.
+* **Example contracts**: This serves as a template for developers building a custom proxy to connect their consumer DApp with Band’s TssVerifier.
 * **Example relayer**: It continuously polls for new requests, fetches data from the Band oracle, and relays the signed result to the TEOProxy contract on the EVM. BandChain parameters (chain ID, RPC endpoint, gas limits) and EVM settings are located at the top of the script for easy customization.
 
 ---
 
 ## 🏗 Architecture
 
-![img](https://cdn.discordapp.com/attachments/1014803398257811468/1384853497148870656/Untitled-2024-04-13-1528.png?ex=6853f0d3&is=68529f53&hm=d1aa3c5bff0ff5188332443f12578762f2e62031b4346f2bd3853368637c6a6b)
-
+![img_arc](/imgs/img_arc.png)
 
 ---
 
@@ -48,6 +47,37 @@ forge install
 ### Run the Python relayer (Example interactions)
 
 See [src/example\_interactions/README.md](src/example_interactions/README.md)             |
+
+---
+
+### 🚨 An error that may occur
+
+If you encounter an error like below when relaying data:
+
+![img_err](/imgs/img_err.png)
+
+it **may be** due to a mismatch between the originator hash your proxy contract expects and the one used in your BandChain request. The proxy computes an `originatorHash` from the `sourceChainID`, `requesterAddress`, and `memo`. Make sure these values (especially the `requesterAddress` and `memo`) match exactly what you registered on BandChain.
+
+```solidity
+bytes4 public constant DirectOriginatorPrefix = 0xb39fa5d2;
+
+function calOriginatorHash(
+    string memory sourceChainID,
+    string memory requesterAddress,
+    string memory memo
+) public pure returns (bytes32 originatorHash) {
+    originatorHash = keccak256(
+        abi.encodePacked(
+            DirectOriginatorPrefix,
+            keccak256(abi.encodePacked(sourceChainID)),
+            keccak256(abi.encodePacked(requesterAddress)),
+            keccak256(abi.encodePacked(memo))
+        )
+    );
+}
+```
+
+Double‑check that your BandChain oracle request used the same `sourceChainID`, `requesterAddress`, and `memo`, so that the proxy’s `calOriginatorHash` matches the on‑chain value.
 
 ---
 
